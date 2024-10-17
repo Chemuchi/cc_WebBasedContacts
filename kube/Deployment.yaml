@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webcontacts-deployment
+  labels:
+    app: webcontacts-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webcontacts-app
+  template:
+    metadata:
+      labels:
+        app: webcontacts-app
+    spec:
+      containers:
+        - name: webcontacts-container
+          image: ashhyeong/webcontact:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          env:
+            - name: CC_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: webcontacts-secret
+                  key: CC_DB_URL
+            - name: CC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: webcontacts-secret
+                  key: CC_DB_PASSWORD
