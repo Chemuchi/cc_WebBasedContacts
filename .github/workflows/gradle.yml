@@ -52,7 +52,7 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Build and Push Docker image
-      run: docker build --platform linux/amd64 -t ashhyeong/webcontact:latest .
+      run: docker build --platform linux/amd64 -t ${{ secrets.DOCKERHUB_USERNAME }}/webcontact:latest .
 
   deploy: 
     runs-on: ubuntu-latest
