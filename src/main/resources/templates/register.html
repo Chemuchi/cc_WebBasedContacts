@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - 웹 기반 주소록</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 320px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            color: #333;
+        }
+        input[type="text"], input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+            display: none;
+        }
+        button {
+            width: 100%;
+            padding: 0.8rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .link {
+            margin-top: 1rem;
+            display: block;
+            color: #007BFF;
+            text-decoration: none;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>회원가입</h1>
+    <input type="text" id="name" placeholder="이름">
+    <div class="error" id="nameError"></div>
+
+    <input type="email" id="email" placeholder="이메일">
+    <div class="error" id="emailError"></div>
+
+    <input type="password" id="password" placeholder="비밀번호">
+    <div class="error" id="passwordError"></div>
+
+    <button id="registerBtn">회원가입</button>
+    <a href="/login" class="link">로그인 페이지로 돌아가기</a>
+</div>
+
+<script>
+    document.getElementById('registerBtn').addEventListener('click', register);
+
+    function clearErrors() {
+        document.getElementById('nameError').style.display = 'none';
+        document.getElementById('emailError').style.display = 'none';
+        document.getElementById('passwordError').style.display = 'none';
+    }
+
+    function register() {
+        clearErrors(); // 기존 오류 메시지를 지웁니다.
+
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        const data = {
+            name: name,
+            email: email,
+            password: password
+        };
+
+        fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.json().then(errorData => {
+                        throw errorData;
+                    });
+                }
+            })
+            .then(result => {
+                alert("회원가입이 완료되었습니다. 로그인 페이지로 돌아갑니다.");
+                window.location.href = "/login";  // 회원가입 성공 후 로그인 페이지로 이동
+            })
+            .catch(error => {
+                if (error.status === 400 && error.message) {
+                    const errorMessages = error.message.split(", ");
+
+                    errorMessages.forEach(message => {
+                        if (message.includes("email")) {
+                            document.getElementById('emailError').innerText = message;
+                            document.getElementById('emailError').style.display = 'block';
+                        } else if (message.includes("name")) {
+                            document.getElementById('nameError').innerText = message;
+                            document.getElementById('nameError').style.display = 'block';
+                        } else if (message.includes("password")) {
+                            document.getElementById('passwordError').innerText = message;
+                            document.getElementById('passwordError').style.display = 'block';
+                        }
+                    });
+                } else {
+                    alert('회원가입에 실패했습니다.');
+                    console.log(error);
+                }
+            });
+    }
+</script>
+</body>
+</html>

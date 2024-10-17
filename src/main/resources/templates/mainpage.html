@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>웹 기반 주소록 - 연락처 관리</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 500px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            color: #333;
+        }
+        button {
+            width: auto;
+            padding: 0.8rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .link {
+            margin-top: 1rem;
+            display: block;
+            color: #007BFF;
+            text-decoration: none;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+        .error {
+            color: red;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+        .contact-list {
+            margin-top: 2rem;
+            text-align: left;
+        }
+        .contact {
+            padding: 1rem;
+            border-bottom: 1px solid #ccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .contact-actions button {
+            margin-right: 0.5rem;
+            padding: 0.5rem;
+            background-color: #007BFF;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        .contact-actions button.delete {
+            background-color: #e74c3c;
+        }
+        #searchContainer {
+            margin-top: 1.5rem;
+        }
+        #searchInput {
+            width: 70%;
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>연락처 관리</h1>
+    <button id="addContactBtn">연락처 추가</button>
+    <button id="logoutBtn" style="background-color: #e74c3c;">로그아웃</button>
+    <div id="searchContainer">
+        <input type="text" id="searchInput" placeholder="이름으로 검색">
+        <button id="searchBtn">검색</button>
+    </div>
+    <div id="errorMessage" class="error"></div>
+
+    <div class="contact-list" id="contactList">
+        <!-- 연락처 목록이 여기에 표시됩니다 -->
+    </div>
+</div>
+
+<div id="contactModal" class="modal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+    <h2 id="modalTitle">연락처 추가</h2>
+    <input type="text" id="modalContactName" placeholder="이름">
+    <input type="email" id="modalContactEmail" placeholder="이메일">
+    <input type="text" id="modalContactPhone" placeholder="전화번호">
+    <button id="saveContactBtn">저장</button>
+    <button onclick="closeModal()">취소</button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', loadContacts);
+    document.getElementById('addContactBtn').addEventListener('click', () => openModal('add'));
+    document.getElementById('saveContactBtn').addEventListener('click', saveContact);
+    document.getElementById('searchBtn').addEventListener('click', searchContactByName);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    let editingContactId = null;
+
+    function loadContacts() {
+        fetch('/api/contacts/all', {
+            method: 'GET',
+            credentials: 'include'
+        })
+            .then(response => {
+                if (response.status === 401) {
+                    throw new Error('로그인이 필요합니다.');
+                }
+                return response.json();
+            })
+            .then(contacts => {
+                displayContacts(contacts);
+            })
+            .catch(error => {
+                document.getElementById('errorMessage').textContent = error.message;
+            });
+    }
+
+    function displayContacts(contacts) {
+        const contactList = document.getElementById('contactList');
+        contactList.innerHTML = '';
+        contacts.forEach(contact => {
+            const contactElement = document.createElement('div');
+            contactElement.className = 'contact';
+            contactElement.innerHTML = `
+                <div>
+                    <strong>이름:</strong> ${contact.name}<br>
+                    <strong>이메일:</strong> ${contact.email}<br>
+                    <strong>전화번호:</strong> ${contact.phoneNumber}
+                </div>
+                <div class="contact-actions">
+                    <button onclick="openModal('edit', ${contact.id})">수정</button>
+                    <button class="delete" onclick="deleteContact(${contact.id})">삭제</button>
+                </div>
+            `;
+            contactList.appendChild(contactElement);
+        });
+    }
+
+    function openModal(mode, contactId = null) {
+        const modal = document.getElementById('contactModal');
+        modal.style.display = 'block';
+        const modalTitle = document.getElementById('modalTitle');
+        const nameInput = document.getElementById('modalContactName');
+        const emailInput = document.getElementById('modalContactEmail');
+        const phoneInput = document.getElementById('modalContactPhone');
+
+        if (mode === 'add') {
+            modalTitle.textContent = '연락처 추가';
+            nameInput.value = '';
+            emailInput.value = '';
+            phoneInput.value = '';
+            editingContactId = null;
+        } else if (mode === 'edit') {
+            modalTitle.textContent = '연락처 수정';
+            editingContactId = contactId;
+
+            fetch(`/api/contacts/all`, {
+                method: 'GET',
+                credentials: 'include'
+            })
+                .then(response => response.json())
+                .then(contacts => {
+                    const contact = contacts.find(contact => contact.id === contactId);
+                    if (contact) {
+                        nameInput.value = contact.name;
+                        emailInput.value = contact.email;
+                        phoneInput.value = contact.phoneNumber;
+                    }
+                });
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('contactModal').style.display = 'none';
+    }
+
+    function saveContact() {
+        const name = document.getElementById('modalContactName').value;
+        const email = document.getElementById('modalContactEmail').value;
+        const phoneNumber = document.getElementById('modalContactPhone').value;
+        const errorMessage = document.getElementById('errorMessage');
+        errorMessage.textContent = '';
+
+        if (!name || !email || !phoneNumber) {
+            errorMessage.textContent = '모든 필드를 입력해주세요.';
+            return;
+        }
+
+        const data = {
+            name: name,
+            email: email,
+            phoneNumber: phoneNumber
+        };
+
+        let url = '/api/contacts/add';
+        let method = 'POST';
+
+        if (editingContactId) {
+            url = `/api/contacts/update/${editingContactId}`;
+            method = 'PUT';
+        }
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(data)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(editingContactId ? '연락처 수정에 실패했습니다.' : '연락처 추가에 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(() => {
+                closeModal();
+                loadContacts();
+            })
+            .catch(error => {
+                errorMessage.textContent = error.message;
+            });
+    }
+
+    function deleteContact(contactId) {
+        fetch(`/api/contacts/delete/${contactId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('연락처 삭제에 실패했습니다.');
+                }
+                loadContacts();
+            })
+            .catch(error => {
+                document.getElementById('errorMessage').textContent = error.message;
+            });
+    }
+
+    function searchContactByName() {
+        const searchInput = document.getElementById('searchInput').value.trim();
+        const errorMessage = document.getElementById('errorMessage');
+        errorMessage.textContent = '';
+
+        if (!searchInput) {
+            errorMessage.textContent = '검색어를 입력해주세요.';
+            return;
+        }
+
+        fetch(`/api/contacts/search?name=${encodeURIComponent(searchInput)}`, {
+            method: 'GET',
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('연락처 검색에 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(contacts => {
+                displayContacts(contacts);
+            })
+            .catch(error => {
+                errorMessage.textContent = error.message;
+            });
+    }
+
+    function logout() {
+        fetch('/logout', {
+            method: 'POST',
+            credentials: 'include'
+        })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    throw new Error('로그아웃에 실패했습니다.');
+                }
+            })
+            .catch(error => {
+                document.getElementById('errorMessage').textContent = error.message;
+            });
+    }
+</script>
+</body>
+</html>
