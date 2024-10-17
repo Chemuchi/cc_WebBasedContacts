@@ -53,11 +53,6 @@ public class UserController {
         }
     }*/
 
-    @PostMapping("/test/login")
-    public ResponseEntity<String> testLogin(){
-        return ResponseEntity.ok("전달완료");
-    }
-
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginDTO loginDTO, HttpSession httpSession) {
@@ -75,15 +70,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("이메일 또는 비밀번호가 잘못되었습니다.");
         }
     }
-
-    /*@PostMapping("/logout")
-    public String logout(HttpServletRequest request){
-        HttpSession session = request.getSession(false);
-        if (session != null){
-            session.invalidate();
-        }
-        return "redirect:/login";
-    }*/
 
 
 }
