@@ -51,8 +51,11 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build and Push Docker image
+    - name: Build Docker image
       run: docker build --platform linux/amd64 -t ${{ secrets.DOCKERHUB_USERNAME }}/webcontact:latest .
+
+    - name: Push Docker image
+      run: docker push ${{secret.DOCKERHUB_USERNAME }}/webcontact:latest
 
   deploy: 
     runs-on: ubuntu-latest
@@ -70,10 +73,7 @@ jobs:
       run: kubectl delete secret webcontacts-secret --ignore-not-found
 
     - name: Create Kubernetes Secret
-      run: |
-        kubectl create secret generic webcontacts-secret \
-          --from-literal=CC_DB_URL=${{ secrets.DB_URL }} \
-          --from-literal=CC_DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+      run: kubectl create secret generic webcontacts-secret --from-literal=CC_DB_URL=${{ secrets.DB_URL }} --from-literal=CC_DB_PASSWORD=${{ secrets.DB_PASSWORD }}
 
     - name: Deploy to Kubernetes
       run: |
