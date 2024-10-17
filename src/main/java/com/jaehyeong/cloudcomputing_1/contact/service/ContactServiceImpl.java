@@ -3,6 +3,8 @@ package com.jaehyeong.cloudcomputing_1.contact.service;
 import com.jaehyeong.cloudcomputing_1.contact.dto.ContactDTO;
 import com.jaehyeong.cloudcomputing_1.contact.model.ContactEntity;
 import com.jaehyeong.cloudcomputing_1.contact.model.ContactRepository;
+import com.jaehyeong.cloudcomputing_1.exception.ContactNotFoundException;
+import com.jaehyeong.cloudcomputing_1.exception.UnauthorizedAccessException;
 import com.jaehyeong.cloudcomputing_1.user.model.UserEntity;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
