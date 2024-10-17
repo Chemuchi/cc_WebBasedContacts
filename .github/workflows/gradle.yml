@@ -73,10 +73,8 @@ jobs:
       run: kubectl delete secret webcontacts-secret --ignore-not-found
 
     - name: Create Kubernetes Secret
-      run: >-
-        kubectl create secret generic webcontacts-secret
-        --from-literal=CC_DB_URL=${{ secrets.DB_URL }}
-        --from-literal=CC_DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+      run: kubectl create secret generic webcontacts-secret --from-literal=CC_DB_URL="${{ secrets.DB_URL }}" --from-literal=CC_DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+
 
 
     - name: Deploy to Kubernetes
