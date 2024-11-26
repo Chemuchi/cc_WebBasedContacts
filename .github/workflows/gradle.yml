@@ -82,6 +82,9 @@ jobs:
         kubectl apply -f kube/Deployment.yaml
         kubectl apply -f kube/Service.yaml
         kubectl set image deployment/webcontacts-deployment webcontacts-container=ashhyeong/webcontact:latest
+
+    - name: Set HPA
+      run: kubectl apply -f kube/HPA.yaml
   
   dependency-submission:
 
